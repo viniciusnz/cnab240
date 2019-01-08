@@ -16,11 +16,11 @@ module Cnab240
 
     attr_accessor :arquivos
 
-    def initialize(io = nil)
-      load(io) unless io.nil?
+    def initialize(io = nil, layout_version = nil)
+      load(io, layout_version) unless io.nil?
     end
 
-    def load(io)
+    def load(io, layout_version)
       @arquivos = []
       line_number = 0
       io.each_line do |line|
@@ -31,7 +31,7 @@ module Cnab240
             find_header_arquivo line, line_number
 
           when HEADER_LOTE
-            find_header_lote line, line_number
+            find_header_lote line, line_number, layout_version
 
           when INICIAIS_LOTE
             raise NotImplementedError.new("Tipo de registro nao suportado")
@@ -93,8 +93,10 @@ module Cnab240
       end
     end
 
-    def find_header_lote(line, line_number = -1)
-      case line[RANGE_HEADER_LOTE]
+    def find_header_lote(line, line_number = -1, layout_version = nil)
+      layout_version ||= line[RANGE_HEADER_LOTE]
+
+      case layout_version
         when '080'
           arquivos.last.lotes << Cnab240::Lote.new(:operacao => :pagamento, :tipo => :none, :versao => 'V80') do |l|
             l.header = Cnab240::V80::Pagamentos::Header.read(line)
